@@ -1,25 +1,78 @@
-const express = require('express')
+const express = require('express'); 
 
-const router = express.Router()
+const contacts = require("../../models/contacts");
+const contactsSchema = require("../../schemas/contactsSchema");
+
+const { RequestError } = require("../../helpers");
+
+const router = express.Router();
 
 router.get('/', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+  try {
+    const result = await contacts.listContacts();
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
 
-router.get('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+router.get('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await contacts.getContactById(id);
+    if (!result) {
+      throw RequestError(404, "Not found");
+    }
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.post('/', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+  try {
+    const { error } = contactsSchema.validate(req.body);
+    if (error) {
+      throw RequestError(400, error.message);
+    }
+    const result = await contacts.addContact(req.body);
+    res.status(201).json(result);
 
-router.delete('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+  } catch (error) {
+    next(error);
+  }
+});
 
-router.put('/:contactId', async (req, res, next) => {
-  res.json({ message: 'template message' })
-})
+router.delete('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const result = await contacts.removeContact(id);
+    if (!result) {
+      throw RequestError(404, "Not found");
+    }
+    res.json({
+      message: "Contact deleted"
+    })
+  } catch (error) {
+    next(error);
+  }
+});
 
-module.exports = router
+router.put('/:id', async (req, res, next) => {
+  try {
+    const { error } = contactsSchema.validate(req.body);
+    if (error) {
+      throw RequestError(400, error.message);
+    }
+    const { id } = req.params;
+    const result = await contacts.updateContactById(id, req.body);
+    if (!result) {
+      throw RequestError(404, "Not found");
+    }
+    res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+module.exports = router;
